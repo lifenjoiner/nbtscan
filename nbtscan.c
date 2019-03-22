@@ -1,13 +1,21 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <string.h>
-#if HAVE_STDINT_H
-#include <stdint.h>
+#include <sys/types.h>
+
+#ifdef WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #include "msconfig.h"
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #if HAVE_STDINT_H
+    #include <stdint.h>
+    #endif
 #endif
+
 #include "statusq.h"
 #include "range.h"
 #include "list.h"
@@ -455,6 +463,14 @@ int main(int argc, char *argv[]) {
 
   /* Prepare socket and address structures */
   /*****************************************/
+#ifdef WIN32
+    WORD	wVersion = MAKEWORD(2, 2);
+    WSADATA	wsaData;
+	if ( WSAStartup(wVersion, &wsaData) != 0 )
+	{
+        err_die("ERROR: initializing Winsock", quiet);
+	}
+#endif
   sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (sock < 0) 
     err_die("Failed to create socket", quiet);
@@ -565,7 +581,13 @@ int main(int argc, char *argv[]) {
       if(more_to_send && FD_ISSET(sock, fdsw) && send_ok) {
 	if(targetlist) {
 	  if(fgets(str, 80, targetlist)) {
-	    if(!inet_aton(str, next_in_addr)) {
+	    if(
+#ifdef WIN32
+        next_in_addr->S_un.S_addr = inet_addr(str) ==  INADDR_NONE
+#else
+	    !inet_aton(str, next_in_addr)
+#endif
+	    ) {
             /* if(!inet_pton(AF_INET, str, next_in_addr)) { */
 	      fprintf(stderr,"%s - bad IP address\n", str);
 	    } else {
@@ -626,6 +648,11 @@ int main(int argc, char *argv[]) {
   };
 
   delete_list(scanned);
+
+#ifdef WIN32
+    WSACleanup();
+#endif
+
   exit(0);
 };
 

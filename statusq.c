@@ -21,16 +21,24 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA
 */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include "statusq.h"
-#include <string.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+
+#ifdef WIN32
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+    #include "msconfig.h"
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+#endif
+
+#include "statusq.h"
 #include "errors.h"
 
 extern int quiet;

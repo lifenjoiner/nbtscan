@@ -1,3 +1,5 @@
+AC_SUBST(TARGET)
+
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(statusq.c)
 
@@ -5,10 +7,19 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 
+AC_CANONICAL_SYSTEM
+
 dnl Checks for libraries.
-AC_CHECK_LIB(xnet, socket)
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(resolv, inet_aton)
+case "$target_os" in
+    mingw32)
+    LIBS="-lws2_32  $LIBS"
+    ;;
+    unix | linux | *posix*)
+    AC_CHECK_LIB(xnet, socket)
+    AC_CHECK_LIB(socket, socket)
+    AC_CHECK_LIB(resolv, inet_aton)
+    ;;
+esac
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -27,19 +38,18 @@ AC_HEADER_TIME
 dnl Checks for library functions.
 AC_CHECK_FUNCS(snprintf inet_aton socket)
 
-AC_CANONICAL_SYSTEM
+case "$target_os" in
+    mingw32 | cygwin)
+    AC_DEFINE(WINDOWS)
+    TARGET=nbtscan.exe
+    ;;
+    unix | linux)
+    AC_DEFINE(UNIX)
+    BINDIR=$prefix/bin
+    TARGET=nbtscan
+    ;;
+esac
 
-if test "$target_os" = cygwin; then
-AC_DEFINE(WINDOWS)
-BINDIR=c:
-TARGET=nbtscan.exe
-else
-AC_DEFINE(UNIX)
-BINDIR=$prefix/bin
-TARGET=nbtscan
-fi
-
-AC_SUBST(TARGET)
 AC_SUBST(BINDIR)
 
 AC_OUTPUT(Makefile)

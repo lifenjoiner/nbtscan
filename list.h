@@ -1,3 +1,4 @@
+#undef ERROR
 #define ERROR 12345
 
 struct list_item {
