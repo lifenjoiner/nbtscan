@@ -2,18 +2,19 @@
 #include <sys/time.h>
 #include <string.h>
 #include <sys/types.h>
+#include <getopt.h>
 
 #ifdef WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    #include "msconfig.h"
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+  #include "msconfig.h"
 #else
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #if HAVE_STDINT_H
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #if HAVE_STDINT_H
     #include <stdint.h>
-    #endif
+  #endif
 #endif
 
 #include "statusq.h"
@@ -24,7 +25,7 @@
 
 int quiet=0;
 
-print_banner() {
+void print_banner() {
   printf("\nNBTscan version 1.5.1. Copyright (C) 1999-2003 Alla Bezroutchko.\n");
   printf("This is a free software and it comes with absolutely no warranty.\n");
   printf("You can use, distribute and modify it under terms of GNU GPL.\n\n");
@@ -66,7 +67,7 @@ void usage(void) {
   printf("\t\tScans a range from 192.168.1.25 to 192.168.1.137\n");
   printf("\tnbtscan -v -s : 192.168.1.0/24\n");
   printf("\t\tScans C-class network. Prints results in script-friendly\n");
-  printf("\t\tformat using colon as field separator.\n"); 
+  printf("\t\tformat using colon as field separator.\n");
   printf("\t\tProduces output like that:\n");
   printf("\t\t192.168.0.1:NT_SERVER:00U\n");
   printf("\t\t192.168.0.1:MY_DOMAIN:00G\n");
@@ -86,7 +87,7 @@ int set_range(char* range_str, struct ip_range* range_struct) {
 };
 
 int print_header() {
-  printf("%-17s%-17s%-10s%-17s%-17s\n", "IP address", "NetBIOS Name", 
+  printf("%-17s%-17s%-10s%-17s%-17s\n", "IP address", "NetBIOS Name",
 	 "Server", "User", "MAC address");
   printf("------------------------------------------------------------------------------\n");
 };
@@ -98,7 +99,7 @@ int d_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo) {
 
   printf("\nPacket dump for Host %s:\n\n", inet_ntoa(addr));
   if(hostinfo->is_broken) printf("Incomplete packet, %d bytes long.\n", hostinfo->is_broken);
-	
+
   if(hostinfo->header) {
     printf("Transaction ID: 0x%04x (%1$d)\n", hostinfo->header->transaction_id);
     printf("Flags: 0x%04x (%1$d)\n", hostinfo->header->flags);
@@ -113,22 +114,22 @@ int d_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo) {
     printf("Rdata length: 0x%04x (%1$d)\n", hostinfo->header->rdata_length);
     printf("Number of names: 0x%02x (%1$d)\n", hostinfo->header->number_of_names);
   };
-	
+
   if(hostinfo->names) {
     printf("Names received:\n");
     for(i=0; i< hostinfo->header->number_of_names; i++) {
       service = hostinfo->names[i].ascii_name[15];
       strncpy(name, hostinfo->names[i].ascii_name, 15);
-      name[16]=0; 
+      name[16]=0;
       printf("%-17s Service: 0x%02x Flags: 0x%04x\n", name, service, hostinfo->names[i].rr_flags);
     }
   };
-	
+
   if(hostinfo->footer) {
-    printf("Adapter address: %02x-%02x-%02x-%02x-%02x-%02x\n", 
+    printf("Adapter address: %02x-%02x-%02x-%02x-%02x-%02x\n",
 	   hostinfo->footer->adapter_address[0], hostinfo->footer->adapter_address[1],
 	   hostinfo->footer->adapter_address[2], hostinfo->footer->adapter_address[3],
-	   hostinfo->footer->adapter_address[4], hostinfo->footer->adapter_address[5]); 
+	   hostinfo->footer->adapter_address[4], hostinfo->footer->adapter_address[5]);
     printf("Version major: 0x%02x (%1$d)\n", hostinfo->footer->version_major);
     printf("Version minor: 0x%02x (%1$d)\n", hostinfo->footer->version_minor);
     printf("Duration: 0x%04x (%1$d)\n", hostinfo->footer->duration);
@@ -142,7 +143,7 @@ int d_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo) {
     printf("No receive buffers: 0x%04 (%1$d)\n", hostinfo->footer->no_receive_buffer);
     printf("tl timeouts: 0x%04 (%1$d)\n", hostinfo->footer->tl_timeouts);
     printf("ti timeouts: 0x%04 (%1$d)\n", hostinfo->footer->ti_timeouts);
-    printf("Free NCBS: 0x%04 (%1$d)\n", hostinfo->footer->free_ncbs);        
+    printf("Free NCBS: 0x%04 (%1$d)\n", hostinfo->footer->free_ncbs);
     printf("NCBS: 0x%04 (%1$d)\n", hostinfo->footer->ncbs);
     printf("Max NCBS: 0x%04 (%1$d)\n", hostinfo->footer->max_ncbs);
     printf("No transmit buffers: 0x%04 (%1$d)\n", hostinfo->footer->no_transmit_buffers);
@@ -162,7 +163,7 @@ int v_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo, c
 
   if(!sf) {
     printf("\nNetBIOS Name Table for Host %s:\n\n", inet_ntoa(addr));
-    if(hostinfo->is_broken) 
+    if(hostinfo->is_broken)
       printf("Incomplete packet, %d bytes long.\n", hostinfo->is_broken);
 
     printf("%-17s%-17s%-17s\n", "Name", "Service", "Type");
@@ -185,7 +186,7 @@ int v_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo, c
       } else {
 	printf("%-17s",  name);
 	if(hr) printf("%s\n", (char*)getnbservicename(service, unique, name));
-	else {	
+	else {
 	  printf("<%02x>", service);
 	  if(unique)  printf("             UNIQUE\n");
 	  else printf("              GROUP\n");
@@ -193,14 +194,14 @@ int v_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo, c
       }
     };
   };
-	
+
   if(hostinfo->footer) {
-    if(sf) printf("%s%sMAC%s", inet_ntoa(addr), sf, sf); 
+    if(sf) printf("%s%sMAC%s", inet_ntoa(addr), sf, sf);
     else printf("\nAdapter address: ");
     printf("%02x-%02x-%02x-%02x-%02x-%02x\n",
 	   hostinfo->footer->adapter_address[0], hostinfo->footer->adapter_address[1],
 	   hostinfo->footer->adapter_address[2], hostinfo->footer->adapter_address[3],
-	   hostinfo->footer->adapter_address[4], hostinfo->footer->adapter_address[5]);	
+	   hostinfo->footer->adapter_address[4], hostinfo->footer->adapter_address[5]);
   };
   if(!sf) printf("----------------------------------------\n");
   return 1;
@@ -221,7 +222,7 @@ int print_hostinfo(struct in_addr addr, struct nb_host_info* hostinfo, char* sf)
       service = hostinfo->names[i].ascii_name[15];
       unique = ! (hostinfo->names[i].rr_flags & 0x0080);
       if(service == 0  && unique && first_name) {
-				/* Unique name, workstation service - this is computer name */ 
+	/* Unique name, workstation service - this is computer name */
 	strncpy(comp_name, hostinfo->names[i].ascii_name, 15);
 	comp_name[15] = 0;
 	first_name = 0;
@@ -274,7 +275,7 @@ int l_print_hostinfo(struct in_addr addr, struct nb_host_info* hostinfo, int l) 
       service = hostinfo->names[i].ascii_name[15];
       unique = ! (hostinfo->names[i].rr_flags & 0x0080);
       if(service == 0  && unique && first_name) {
-				/* Unique name, workstation service - this is computer name */ 
+	/* Unique name, workstation service - this is computer name */
 	strncpy(comp_name, hostinfo->names[i].ascii_name, 15);
 	comp_name[15]=0;
 	first_name = 0;
@@ -286,7 +287,7 @@ int l_print_hostinfo(struct in_addr addr, struct nb_host_info* hostinfo, int l) 
   printf("\n");
 }
 
-	
+
 #define BUFFSIZE 1024
 
 int main(int argc, char *argv[]) {
@@ -312,7 +313,7 @@ int main(int argc, char *argv[]) {
   my_uint32_t rtt_base; /* Base time (seconds) for round trip time calculations */
   float rtt; /* most recent measured RTT, seconds */
   float srtt=0; /* smoothed rtt estimator, seconds */
-  float rttvar=0.75; /* smoothed mean deviation, seconds */ 
+  float rttvar=0.75; /* smoothed mean deviation, seconds */
   double delta; /* used in retransmit timeout calculations */
   int rto, retransmits=0, more_to_send=1, i;
   char errmsg[80];
@@ -321,8 +322,8 @@ int main(int argc, char *argv[]) {
 
   /* Parse supplied options */
   /**************************/
-  if(argc<2) { 
-    print_banner(); 
+  if(argc<2) {
+    print_banner();
     usage();
   };
 
@@ -333,7 +334,7 @@ int main(int argc, char *argv[]) {
       break;
     case 't':
       timeout=atoi(optarg);
-      if(timeout==0) { 
+      if(timeout==0) {
 	printf("Bad timeout value: %s\n", optarg);
 	usage();
       };
@@ -369,7 +370,7 @@ int main(int argc, char *argv[]) {
       break;
     case 'm':
       retransmits=atoi(optarg);
-      if(retransmits==0) { 
+      if(retransmits==0) {
 	printf("Bad number of retransmits: %s\n", optarg);
 	usage();
       };
@@ -385,7 +386,7 @@ int main(int argc, char *argv[]) {
   if(dump && verbose) {
     printf("Cannot be used with both dump (-d) and verbose (-v) options.\n");
     usage();
-  };  
+  };
 
   if(dump && sf) {
     printf("Cannot be used with both dump (-d) and script-friendly (-s) options.\n");
@@ -417,7 +418,7 @@ int main(int argc, char *argv[]) {
     usage;
   };
 
-	
+
   if(dump && hr) {
     printf("Cannot be used with both dump (-d) and \"human-readable service names\" (-h) options.\n");
     usage();
@@ -430,7 +431,7 @@ int main(int argc, char *argv[]) {
 
   if(filename) {
     if(strcmp(filename, "-") == 0) { /* Get IP addresses from stdin */
-      targetlist = stdin; 
+      targetlist = stdin;
       target_string = "STDIN";
     } else {
       targetlist=fopen(filename,"r");
@@ -439,15 +440,15 @@ int main(int argc, char *argv[]) {
     if(!targetlist) {
       snprintf(errmsg, 80, "Cannot open file %s", filename);
       err_die(errmsg, quiet);
-    }  
-  } else {  
+    }
+  } else {
     argc -= optind;
     argv += optind;
     if(argc!=1) usage();
 
-    if((target_string=strdup(argv[0]))==NULL) 
+    if((target_string=strdup(argv[0]))==NULL)
       err_die("Malloc failed.\n", quiet);
-    
+
     if(!set_range(target_string, &range)) {
       printf("Error: %s is not an IP address or address range.\n", target_string);
       free(target_string);
@@ -455,7 +456,7 @@ int main(int argc, char *argv[]) {
     };
   }
 
-	
+
   if(!(quiet || sf || lmhosts || etc_hosts)) printf("Doing NBT name scan for addresses from %s\n\n", target_string);
 
   /* Finished with options */
@@ -464,28 +465,27 @@ int main(int argc, char *argv[]) {
   /* Prepare socket and address structures */
   /*****************************************/
 #ifdef WIN32
-    WORD	wVersion = MAKEWORD(2, 2);
-    WSADATA	wsaData;
-	if ( WSAStartup(wVersion, &wsaData) != 0 )
-	{
-        err_die("ERROR: initializing Winsock", quiet);
-	}
+  WORD wVersion = MAKEWORD(2, 2);
+  WSADATA wsaData;
+  if (WSAStartup(wVersion, &wsaData) != 0) {
+    err_die("ERROR: initializing Winsock", quiet);
+  }
 #endif
   sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  if (sock < 0) 
+  if (sock < 0)
     err_die("Failed to create socket", quiet);
 
   bzero((void*)&src_sockaddr, sizeof(src_sockaddr));
   src_sockaddr.sin_family = AF_INET;
   if(use137) src_sockaddr.sin_port = htons(NB_DGRAM);
-  if (bind(sock, (struct sockaddr *)&src_sockaddr, sizeof(src_sockaddr)) == -1) 
+  if (bind(sock, (struct sockaddr *)&src_sockaddr, sizeof(src_sockaddr)) == -1)
     err_die("Failed to bind", quiet);
-        
+
   fdsr=malloc(sizeof(fd_set));
   if(!fdsr)  err_die("Malloc failed", quiet);
   FD_ZERO(fdsr);
   FD_SET(sock, fdsr);
-        
+
   fdsw=malloc(sizeof(fd_set));
   if(!fdsw) err_die("Malloc failed", quiet);
   FD_ZERO(fdsw);
@@ -502,11 +502,11 @@ int main(int argc, char *argv[]) {
 
   buff=malloc(BUFFSIZE);
   if(!buff) err_die("Malloc failed", quiet);
-	
+
   /* Calculate interval between subsequent sends */
 
   timerclear(&send_interval);
-  if(bandwidth) send_interval.tv_usec = 
+  if(bandwidth) send_interval.tv_usec =
 		  (NBNAME_REQUEST_SIZE + UDP_HEADER_SIZE + IP_HEADER_SIZE)*8*1000000 /
 		  bandwidth;  /* Send interval in microseconds */
   else /* Assuming 10baseT bandwidth */
@@ -515,18 +515,18 @@ int main(int argc, char *argv[]) {
     send_interval.tv_sec = send_interval.tv_usec / 1000000;
     send_interval.tv_usec = send_interval.tv_usec % 1000000;
   }
-	
+
   gettimeofday(&last_send_time, NULL); /* Get current time */
 
-  rtt_base = last_send_time.tv_sec; 
+  rtt_base = last_send_time.tv_sec;
 
   /* Send queries, receive answers and print results */
   /***************************************************/
-	
+
   scanned = new_list();
 
   if(!(quiet || verbose || dump || sf || lmhosts || etc_hosts)) print_header();
-	
+
   for(i=0; i <= retransmits; i++) {
     gettimeofday(&transmit_started, NULL);
     while ( (select(sock+1, fdsr, fdsw, NULL, &select_timeout)) > 0) {
@@ -545,45 +545,45 @@ int main(int argc, char *argv[]) {
 	};
 				/* If this packet isn't a duplicate */
 	if(insert(scanned, ntohl(dest_sockaddr.sin_addr.s_addr))) {
-	  rtt = recv_time.tv_sec + 
-	    recv_time.tv_usec/1000000 - rtt_base - 
+	  rtt = recv_time.tv_sec +
+	    recv_time.tv_usec/1000000 - rtt_base -
 	    hostinfo->header->transaction_id/1000;
-	  /* Using algorithm described in Stevens' 
+	  /* Using algorithm described in Stevens'
 	     Unix Network Programming */
 	  delta = rtt - srtt;
 	  srtt += delta / 8;
 	  if(delta < 0.0) delta = - delta;
 	  rttvar += (delta - rttvar) / 4 ;
-				
-	  if (verbose) 
+
+	  if (verbose)
 	    v_print_hostinfo(dest_sockaddr.sin_addr, hostinfo, sf, hr);
-	  else if (dump) 
+	  else if (dump)
 	    d_print_hostinfo(dest_sockaddr.sin_addr, hostinfo);
 	  else if (etc_hosts)
 	    l_print_hostinfo(dest_sockaddr.sin_addr, hostinfo, 0);
 	  else if (lmhosts)
 	    l_print_hostinfo(dest_sockaddr.sin_addr, hostinfo, 1);
-	  else 
-	    print_hostinfo(dest_sockaddr.sin_addr, hostinfo,sf);
+	  else
+	    print_hostinfo(dest_sockaddr.sin_addr, hostinfo, sf);
 	};
 	free(hostinfo);
       };
 
       FD_ZERO(fdsr);
-      FD_SET(sock, fdsr);		
+      FD_SET(sock, fdsr);
 
       /* check if send_interval time passed since last send */
       gettimeofday(&current_time, NULL);
       timersub(&current_time, &last_send_time, &diff_time);
       send_ok = timercmp(&diff_time, &send_interval, >=);
-			
-		
+
+
       if(more_to_send && FD_ISSET(sock, fdsw) && send_ok) {
 	if(targetlist) {
 	  if(fgets(str, 80, targetlist)) {
 	    if(
 #ifdef WIN32
-        next_in_addr->S_un.S_addr = inet_addr(str) ==  INADDR_NONE
+            (next_in_addr->S_un.S_addr = inet_addr(str)) ==  INADDR_NONE
 #else
 	    !inet_aton(str, next_in_addr)
 #endif
@@ -591,12 +591,12 @@ int main(int argc, char *argv[]) {
             /* if(!inet_pton(AF_INET, str, next_in_addr)) { */
 	      fprintf(stderr,"%s - bad IP address\n", str);
 	    } else {
-	      if(!in_list(scanned, ntohl(next_in_addr->s_addr))) 
+	      if(!in_list(scanned, ntohl(next_in_addr->s_addr)))
 	        send_query(sock, *next_in_addr, rtt_base);
 	    }
 	  } else {
 	    if(feof(targetlist)) {
-	      more_to_send=0; 
+	      more_to_send=0;
 	      FD_ZERO(fdsw);
               /* timeout is in milliseconds */
 	      select_timeout.tv_sec = timeout / 1000;
@@ -608,20 +608,20 @@ int main(int argc, char *argv[]) {
 	    }
 	  }
 	} else if(next_address(&range, prev_in_addr, next_in_addr) ) {
-	  if(!in_list(scanned, ntohl(next_in_addr->s_addr))) 
+	  if(!in_list(scanned, ntohl(next_in_addr->s_addr)))
 	    send_query(sock, *next_in_addr, rtt_base);
 	  prev_in_addr=next_in_addr;
 	  /* Update last send time */
-	  gettimeofday(&last_send_time, NULL); 
+	  gettimeofday(&last_send_time, NULL);
 	} else { /* No more queries to send */
-	  more_to_send=0; 
+	  more_to_send=0;
 	  FD_ZERO(fdsw);
           /* timeout is in milliseconds */
           select_timeout.tv_sec = timeout / 1000;
           select_timeout.tv_usec = (timeout % 1000) * 1000; /* Microseconds */
 	  continue;
 	};
-      };	
+      };
       if(more_to_send) {
 	FD_ZERO(fdsw);
 	FD_SET(sock, fdsw);
@@ -636,8 +636,8 @@ int main(int argc, char *argv[]) {
     if ( rto < 2.0 ) rto = 2.0;
     if ( rto > 60.0 ) rto = 60.0;
     gettimeofday(&now, NULL);
-		
-    if(now.tv_sec < (transmit_started.tv_sec+rto)) 
+
+    if(now.tv_sec < (transmit_started.tv_sec+rto))
       sleep((transmit_started.tv_sec+rto)-now.tv_sec);
     prev_in_addr = NULL ;
     more_to_send=1;
@@ -650,7 +650,7 @@ int main(int argc, char *argv[]) {
   delete_list(scanned);
 
 #ifdef WIN32
-    WSACleanup();
+  WSACleanup();
 #endif
 
   exit(0);
