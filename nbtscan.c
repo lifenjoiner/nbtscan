@@ -120,7 +120,7 @@ int d_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo) {
     for(i=0; i< hostinfo->header->number_of_names; i++) {
       service = hostinfo->names[i].ascii_name[15];
       strncpy(name, hostinfo->names[i].ascii_name, 15);
-      name[16]=0;
+      name[15]=0;
       printf("%-17s Service: 0x%02x Flags: 0x%04x\n", name, service, hostinfo->names[i].rr_flags);
     }
   };
@@ -173,7 +173,7 @@ int v_print_hostinfo(struct in_addr addr, const struct nb_host_info* hostinfo, c
     for(i=0; i< hostinfo->header->number_of_names; i++) {
       service = hostinfo->names[i].ascii_name[15];
       strncpy(name, hostinfo->names[i].ascii_name, 15);
-      name[16]=0;
+      name[15]=0;
       unique = !(hostinfo->names[i].rr_flags & 0x0080);
       if(sf) {
 	printf("%s%s%s%s", inet_ntoa(addr), sf, name, sf);
