@@ -27,6 +27,7 @@ int quiet=0;
 
 void print_banner() {
   printf("\nNBTscan version 1.5.1. Copyright (C) 1999-2003 Alla Bezroutchko.\n");
+  printf("NBTscan version 1.5.2 for Windows @ https://github.com/lifenjoiner/nbtscan\n");
   printf("This is a free software and it comes with absolutely no warranty.\n");
   printf("You can use, distribute and modify it under terms of GNU GPL.\n\n");
 }
